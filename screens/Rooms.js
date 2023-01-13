@@ -68,12 +68,13 @@ const Rooms = (data) => {
                             return(
                                 <TouchableOpacity 
                                     key={room.id}
-                                    onPress={() => { joinRoom(room.id) }} 
+                                    onPress={() => { if(room.data().status === 0){joinRoom(room.id)} }} 
                                     activeOpacity={0.7} 
                                     style={{width: '90%', height: 80, backgroundColor: '#fff', borderRadius: 25, justifyContent: 'center', marginBottom: 10}}
                                 >
                                     <Text style={{color: '#3a3a3a', fontSize: 22, fontWeight: '500', marginLeft: 15}}>{room.id}</Text>
-                                    <Text style={{position: 'absolute', bottom: 5, right: 15, fontSize: 12, color: '#5a5a5a'}}>erstellt von: {room.data().createdBy}</Text>
+                                    <Text style={{color: room.data().status !== 0 ? "#f00" : "#0f0", fontSize: 16, fontWeight: '500', marginLeft: 15, position: 'absolute', right: 20}}>{room.data().status !== 0 ? "Spiel läuft" : "Offen"}</Text>
+                                    <Text style={{position: 'absolute', bottom: 5, right: 15, fontSize: 8, color: '#5a5a5a'}}>erstellt von: {room.data().createdBy}</Text>
                                 </TouchableOpacity>
                             )
                         })}
