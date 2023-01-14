@@ -51,7 +51,7 @@ const Rooms = (data) => {
     const handleCreateButton = async () => {
         if(isCreating && roomName !== ""){
             const roomRef = doc(database, 'rooms', roomName)
-            await setDoc(roomRef, {createdBy: user.userID, status: 0, asking: "", answering: "", round: 1, ranking: []})
+            await setDoc(roomRef, {createdBy: user.userID, status: 0, asking: "", answering: "", round: 1, finished: 0, rating: []})
             .then(
                 joinRoom(roomName)
             )
@@ -60,9 +60,9 @@ const Rooms = (data) => {
         }
     }
 
-    const handleDeleteRoom = async (roomID) => {
+    const handleDeleteRoom = (roomID) => {
         const roomRef = doc(database, 'rooms', roomID)
-        await deleteDoc(roomRef).then(haptic("normal"))
+        deleteDoc(roomRef).then(haptic("normal"))
     }
 
     return(
@@ -81,7 +81,7 @@ const Rooms = (data) => {
                                     <Text style={{color: '#3a3a3a', fontSize: 22, fontWeight: '500', marginLeft: 15}}>{room.id}</Text>
                                     <Text style={{color: room.data().status !== 0 ? "#f00" : "#0f0", fontSize: 16, fontWeight: '500', marginLeft: 15, position: 'absolute', right: 20}}>{room.data().status !== 0 ? "Spiel läuft" : "Offen"}</Text>
                                     <Text style={{position: 'absolute', bottom: 5, right: 15, fontSize: 8, color: '#5a5a5a'}}>erstellt von: {room.data().createdBy}</Text>
-                                    {user.id === room.data().createdBy && (
+                                    {user.userID === room.data().createdBy && (
                                         <TouchableOpacity 
                                             onPress={() => {handleDeleteRoom(room.id)}}
                                             style={{position: 'absolute', top: -10, right: -10, borderRadius: 10, backgroundColor: '#f00', alignItems: 'center', justifyContent: 'center', width: 20, height: 20}}
