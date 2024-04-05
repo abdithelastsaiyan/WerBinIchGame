@@ -24,11 +24,11 @@ import {
   deleteField,
 } from "firebase/firestore";
 // Helpers
-import Screen, { safeArea } from "../helpers/Screen";
-import { avatars } from "../helpers/Avatars";
-import haptic from "../helpers/Haptics";
+import Screen, { safeArea } from "../../helpers/Screen";
+import { avatars } from "../../helpers/Avatars";
+import haptic from "../../helpers/Haptics";
 
-const Room = (data) => {
+const WhoamiRoom = (data) => {
   // Navigation
   const navigation = useNavigation();
 
@@ -415,6 +415,11 @@ const Room = (data) => {
     const unsub = onSnapshot(doc(database, "rooms", room), (doc) => {
       setGame(doc.data());
       console.log("es ist was passiert!");
+      if (doc.data().status === 0) {
+        setCharacterChosen("");
+        setYourCharacter("");
+        console.log("char chose wurde zurück gesetzt");
+      }
     });
     return unsub;
   }, []);
@@ -515,7 +520,7 @@ const Room = (data) => {
                     }}
                   >
                     <Image
-                      source={require("../assets/shuffle.png")}
+                      source={require("../../assets/shuffle.png")}
                       resizeMode="contain"
                       style={{
                         width: 20,
@@ -527,11 +532,38 @@ const Room = (data) => {
               </View>
             )}
             {game.status === 1 && (
-              <Text
-                style={{ color: "#3a3a3a", fontSize: 18, fontWeight: "600" }}
+              // backToLobbyFromChooseCharacter
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  width: Screen.width / 1,
+                }}
               >
-                Wähle deine Person!
-              </Text>
+                <TouchableOpacity
+                  onPress={goodByeMyNiggaBackToTheLobby}
+                  style={{
+                    position: "absolute",
+                    left: 15,
+                    paddingHorizontal: 20,
+                    paddingVertical: 9,
+                    backgroundColor: "#fe5f55",
+                    borderRadius: 25,
+                  }}
+                >
+                  <Text
+                    style={{ color: "#fff", fontWeight: "700", fontSize: 16 }}
+                  >
+                    Back
+                  </Text>
+                </TouchableOpacity>
+                <Text
+                  style={{ color: "#3a3a3a", fontSize: 18, fontWeight: "600" }}
+                >
+                  Wähle deine Person!
+                </Text>
+              </View>
             )}
             {game.status === 2 && (
               <Text
@@ -735,7 +767,8 @@ const Room = (data) => {
                             style={{
                               flexDirection: "row",
                               flexWrap: "wrap",
-                              marginLeft: 5,
+                              marginHorizontal: 10,
+                              justifyContent: "space-between",
                             }}
                           >
                             {player.map((p2) => {
@@ -747,14 +780,13 @@ const Room = (data) => {
                                         handleZuweisung(p.id, p2.id);
                                       }}
                                       style={{
-                                        marginLeft: 5,
                                         marginBottom: 15,
                                         alignItems: "center",
                                         borderRadius: 10,
                                         backgroundColor: "#f6f6f6",
                                         paddingVertical: 5,
                                         paddingHorizontal: 5,
-                                        width: 65,
+                                        width: 63,
                                       }}
                                     >
                                       <Image
@@ -786,16 +818,31 @@ const Room = (data) => {
                 {myID === game.createdBy && (
                   <TouchableOpacity
                     onPress={handleAdminNext}
-                    disabled={player.length === 1}
+                    disabled={
+                      player.reduce((acc, all) => {
+                        if (all.data().hasChosenFor) {
+                          return acc + 1;
+                        }
+                        return acc;
+                      }, 0) !== player.length
+                    }
                     style={{
                       width: Screen.width / 1.6,
                       height: 60,
                       backgroundColor:
-                        player.length > 1 ? "#fe5f55" : "#8a8a8a",
+                        player.reduce((acc, all) => {
+                          if (all.data().hasChosenFor) {
+                            return acc + 1;
+                          }
+                          return acc;
+                        }, 0) === player.length
+                          ? "#fe5f55"
+                          : "#8a8a8a",
                       borderRadius: 30,
                       marginVertical: 50,
                       alignItems: "center",
                       justifyContent: "center",
+                      marginBottom: 150,
                     }}
                   >
                     <Text
@@ -813,7 +860,7 @@ const Room = (data) => {
             <View
               style={{
                 flex: 1,
-                backgroundColor: "#ffe8d6",
+                backgroundColor: "#F6FBF4",
                 width: Screen.width,
                 alignItems: "center",
               }}
@@ -838,6 +885,8 @@ const Room = (data) => {
                                   fontSize: 18,
                                   fontWeight: "500",
                                   marginBottom: 45,
+                                  marginHorizontal: 15,
+                                  textAlign: "center",
                                 }}
                               >
                                 Such dir einen Charakter für {myGuy.data().name}{" "}
@@ -921,7 +970,7 @@ const Room = (data) => {
                                       fontWeight: "500",
                                     }}
                                   >
-                                    FERTIG
+                                    Wählen
                                   </Text>
                                 </TouchableOpacity>
                               )}
@@ -931,7 +980,7 @@ const Room = (data) => {
                                     width: Screen.width / 1.5,
                                     height: 60,
                                     borderRadius: 25,
-                                    backgroundColor: "#0f0",
+                                    backgroundColor: "#9ADE7B",
                                     alignItems: "center",
                                     justifyContent: "center",
                                   }}
@@ -943,7 +992,7 @@ const Room = (data) => {
                                       fontWeight: "500",
                                     }}
                                   >
-                                    FERTIG
+                                    Fertig!
                                   </Text>
                                 </View>
                               )}
@@ -955,12 +1004,15 @@ const Room = (data) => {
                                   marginTop: 10,
                                 }}
                               >
-                                {player.map((all) => {
-                                  if (all.data().chosenCharacter) {
-                                    return "|";
-                                  }
-                                })}{" "}
-                                von {player.length} sind ready
+                                {
+                                  player.reduce((acc, all) => {
+                                    if (all.data().chosenCharacter) {
+                                      return acc + 1; // Erhöht den Zähler um eins, wenn chosenCharacter gesetzt ist
+                                    }
+                                    return acc; // Lässt den Zähler unverändert, wenn chosenCharacter nicht gesetzt ist
+                                  }, 0) // Startwert des Zählers ist 0
+                                }{" "}
+                                von {player.length} Spielern sind Ready
                               </Text>
                             </View>
                           );
@@ -972,12 +1024,28 @@ const Room = (data) => {
               })}
               {myID === game.createdBy && (
                 <TouchableOpacity
+                  disabled={
+                    player.reduce((acc, all) => {
+                      if (all.data().chosenCharacter) {
+                        return acc + 1;
+                      }
+                      return acc;
+                    }, 0) !== player.length
+                  }
                   onPress={handleAdminNext}
                   style={{
                     width: Screen.width / 1.5,
                     height: 60,
                     borderRadius: 30,
-                    backgroundColor: "#f00",
+                    backgroundColor:
+                      player.reduce((acc, all) => {
+                        if (all.data().chosenCharacter) {
+                          return acc + 1;
+                        }
+                        return acc;
+                      }, 0) === player.length
+                        ? "#FD5E53"
+                        : "#3a3a3a90",
                     marginTop: 15,
                     alignItems: "center",
                     justifyContent: "center",
@@ -1339,209 +1407,219 @@ const Room = (data) => {
           )}
           {/* Overview */}
           {game.status === 3 && (
-            <View
-              style={{
-                backgroundColor: "#ffe8d6c0",
-                width: Screen.width,
-                flex: 1,
-                alignItems: "center",
-              }}
-            >
-              {/* FIRST PLACE */}
-              <View style={{ width: Screen.width / 2.2, marginTop: 15 }}>
-                {player.map((winner) => {
-                  if (winner.id === game.rating[0]) {
-                    return (
-                      <View key={winner.id} style={{ alignItems: "center" }}>
-                        <Image
-                          source={avatars[winner.data().avatar]}
-                          resizeMode="contain"
-                          style={{
-                            width: Screen.width / 2.2,
-                            height: Screen.width / 2.2,
-                            borderRadius: Screen.width / 2.2,
-                          }}
-                        />
-                        <Text
-                          style={{
-                            marginTop: 15,
-                            color: "#3a3a3a",
-                            fontSize: 20,
-                            fontWeight: "600",
-                            textDecorationLine: "underline",
-                          }}
-                        >
-                          1. {winner.data().name}
-                        </Text>
-                      </View>
-                    );
-                  }
-                })}
-              </View>
+            <ScrollView showsVerticalScrollIndicator={false}>
               <View
                 style={{
-                  flexDirection: "row",
-                  justifyContent: "space-between",
-                  marginTop: 10,
-                }}
-              >
-                {/* SCND PLACE */}
-                <View style={{ width: Screen.width / 2 }}>
-                  {player.map((winner) => {
-                    if (winner.id === game.rating[1]) {
-                      return (
-                        <View key={winner.id} style={{ alignItems: "center" }}>
-                          <Image
-                            source={avatars[winner.data().avatar]}
-                            resizeMode="contain"
-                            style={{
-                              width: Screen.width / 3.5,
-                              height: Screen.width / 3.5,
-                              borderRadius: Screen.width / 2.2,
-                            }}
-                          />
-                          <Text
-                            style={{
-                              marginTop: 15,
-                              color: "#3a3a3a",
-                              fontSize: 18,
-                              fontWeight: "600",
-                              textDecorationLine: "underline",
-                            }}
-                          >
-                            2. {winner.data().name}
-                          </Text>
-                        </View>
-                      );
-                    }
-                  })}
-                </View>
-                {/* SCND PLACE */}
-                <View style={{ width: Screen.width / 2 }}>
-                  {player.map((winner) => {
-                    if (winner.id === game.rating[2]) {
-                      return (
-                        <View key={winner.id} style={{ alignItems: "center" }}>
-                          <Image
-                            source={avatars[winner.data().avatar]}
-                            resizeMode="contain"
-                            style={{
-                              width: Screen.width / 3.5,
-                              height: Screen.width / 3.5,
-                              borderRadius: Screen.width / 2.2,
-                            }}
-                          />
-                          <Text
-                            style={{
-                              marginTop: 15,
-                              color: "#3a3a3a",
-                              fontSize: 16,
-                              fontWeight: "600",
-                              textDecorationLine: "underline",
-                            }}
-                          >
-                            3. {winner.data().name}
-                          </Text>
-                        </View>
-                      );
-                    }
-                  })}
-                </View>
-              </View>
-              <View
-                style={{
+                  backgroundColor: "#ffe8d6c0",
+                  width: Screen.width,
+                  flex: 1,
                   alignItems: "center",
-                  width: Screen.width / 1.1,
-                  marginTop: 35,
-                  backgroundColor: "#ffffff",
-                  borderRadius: 20,
-                  paddingVertical: 10,
                 }}
               >
-                {game.rating.map((rest, index) => {
-                  if (index > 2) {
-                    return (
-                      <View
-                        key={index}
-                        style={{
-                          width: Screen.width / 1.2,
-                          paddingVertical: 15,
-                          backgroundColor: "#ffe8d660",
-                          marginVertical: 5,
-                          borderRadius: 10,
-                        }}
-                      >
-                        {player.map((data) => {
-                          if (data.id === rest) {
-                            return (
-                              <View
-                                style={{
-                                  flexDirection: "row",
-                                  alignItems: "center",
-                                }}
-                              >
-                                <Text
-                                  style={{
-                                    marginLeft: 15,
-                                    color: "#3a3a3a",
-                                    fontSize: 16,
-                                    fontWeight: "500",
-                                    marginRight: 10,
-                                  }}
-                                >
-                                  {index + 1}.
-                                </Text>
-                                <Image
-                                  source={avatars[data.data().avatar]}
-                                  resizeMode="contain"
-                                  style={{
-                                    width: 30,
-                                    height: 30,
-                                    borderRadius: 15,
-                                    marginRight: 10,
-                                  }}
-                                />
-                                <Text
-                                  style={{
-                                    color: "#3a3a3a",
-                                    fontSize: 16,
-                                    fontWeight: "500",
-                                  }}
-                                >
-                                  {data.data().name}
-                                </Text>
-                              </View>
-                            );
-                          }
-                        })}
-                      </View>
-                    );
-                  }
-                })}
-              </View>
-              <View style={{ marginTop: 15 }}>
-                <TouchableOpacity
-                  onPress={goodByeMyNiggaBackToTheLobby}
-                  activeOpacity={0.8}
+                {/* FIRST PLACE */}
+                <View style={{ width: Screen.width / 2.2, marginTop: 15 }}>
+                  {player.map((winner) => {
+                    if (winner.id === game.rating[0]) {
+                      return (
+                        <View key={winner.id} style={{ alignItems: "center" }}>
+                          <Image
+                            source={avatars[winner.data().avatar]}
+                            resizeMode="contain"
+                            style={{
+                              width: Screen.width / 2.2,
+                              height: Screen.width / 2.2,
+                              borderRadius: Screen.width / 2.2,
+                            }}
+                          />
+                          <Text
+                            style={{
+                              marginTop: 15,
+                              color: "#3a3a3a",
+                              fontSize: 20,
+                              fontWeight: "600",
+                              textDecorationLine: "underline",
+                            }}
+                          >
+                            1. {winner.data().name}
+                          </Text>
+                        </View>
+                      );
+                    }
+                  })}
+                </View>
+                <View
                   style={{
-                    backgroundColor: "#fe5f55",
-                    paddingVertical: 18,
-                    paddingHorizontal: 25,
-                    borderRadius: 50,
+                    flexDirection: "row",
+                    justifyContent: "space-between",
+                    marginTop: 10,
                   }}
                 >
-                  <Text
-                    style={{
-                      fontSize: 17,
-                      fontWeight: "600",
-                      color: "#fff",
-                    }}
-                  >
-                    Nochmal spielen
-                  </Text>
-                </TouchableOpacity>
+                  {/* SCND PLACE */}
+                  <View style={{ width: Screen.width / 2 }}>
+                    {player.map((winner) => {
+                      if (winner.id === game.rating[1]) {
+                        return (
+                          <View
+                            key={winner.id}
+                            style={{ alignItems: "center" }}
+                          >
+                            <Image
+                              source={avatars[winner.data().avatar]}
+                              resizeMode="contain"
+                              style={{
+                                width: Screen.width / 3.5,
+                                height: Screen.width / 3.5,
+                                borderRadius: Screen.width / 2.2,
+                              }}
+                            />
+                            <Text
+                              style={{
+                                marginTop: 15,
+                                color: "#3a3a3a",
+                                fontSize: 18,
+                                fontWeight: "600",
+                                textDecorationLine: "underline",
+                              }}
+                            >
+                              2. {winner.data().name}
+                            </Text>
+                          </View>
+                        );
+                      }
+                    })}
+                  </View>
+                  {/* SCND PLACE */}
+                  <View style={{ width: Screen.width / 2 }}>
+                    {player.map((winner) => {
+                      if (winner.id === game.rating[2]) {
+                        return (
+                          <View
+                            key={winner.id}
+                            style={{ alignItems: "center" }}
+                          >
+                            <Image
+                              source={avatars[winner.data().avatar]}
+                              resizeMode="contain"
+                              style={{
+                                width: Screen.width / 3.5,
+                                height: Screen.width / 3.5,
+                                borderRadius: Screen.width / 2.2,
+                              }}
+                            />
+                            <Text
+                              style={{
+                                marginTop: 15,
+                                color: "#3a3a3a",
+                                fontSize: 16,
+                                fontWeight: "600",
+                                textDecorationLine: "underline",
+                              }}
+                            >
+                              3. {winner.data().name}
+                            </Text>
+                          </View>
+                        );
+                      }
+                    })}
+                  </View>
+                </View>
+                <View
+                  style={{
+                    alignItems: "center",
+                    width: Screen.width / 1.1,
+                    marginTop: 35,
+                    backgroundColor: "#ffffff",
+                    borderRadius: 20,
+                    paddingVertical: 10,
+                  }}
+                >
+                  {game.rating.map((rest, index) => {
+                    if (index > 2) {
+                      return (
+                        <View
+                          key={index}
+                          style={{
+                            width: Screen.width / 1.2,
+                            paddingVertical: 15,
+                            backgroundColor: "#ffe8d660",
+                            marginVertical: 5,
+                            borderRadius: 10,
+                          }}
+                        >
+                          {player.map((data) => {
+                            if (data.id === rest) {
+                              return (
+                                <View
+                                  style={{
+                                    flexDirection: "row",
+                                    alignItems: "center",
+                                  }}
+                                >
+                                  <Text
+                                    style={{
+                                      marginLeft: 15,
+                                      color: "#3a3a3a",
+                                      fontSize: 16,
+                                      fontWeight: "500",
+                                      marginRight: 10,
+                                    }}
+                                  >
+                                    {index + 1}.
+                                  </Text>
+                                  <Image
+                                    source={avatars[data.data().avatar]}
+                                    resizeMode="contain"
+                                    style={{
+                                      width: 30,
+                                      height: 30,
+                                      borderRadius: 15,
+                                      marginRight: 10,
+                                    }}
+                                  />
+                                  <Text
+                                    style={{
+                                      color: "#3a3a3a",
+                                      fontSize: 16,
+                                      fontWeight: "500",
+                                    }}
+                                  >
+                                    {data.data().name}
+                                  </Text>
+                                </View>
+                              );
+                            }
+                          })}
+                        </View>
+                      );
+                    }
+                  })}
+                </View>
+                <View style={{ marginTop: 15, marginBottom: 100 }}>
+                  {game.createdBy === myID && (
+                    <TouchableOpacity
+                      onPress={goodByeMyNiggaBackToTheLobby}
+                      activeOpacity={0.8}
+                      style={{
+                        backgroundColor: "#fe5f55",
+                        paddingVertical: 18,
+                        paddingHorizontal: 25,
+                        borderRadius: 50,
+                      }}
+                    >
+                      <Text
+                        style={{
+                          fontSize: 17,
+                          fontWeight: "600",
+                          color: "#fff",
+                        }}
+                      >
+                        Nochmal spielen
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
               </View>
-            </View>
+            </ScrollView>
           )}
         </View>
       )}
@@ -1549,4 +1627,4 @@ const Room = (data) => {
   );
 };
 
-export default Room;
+export default WhoamiRoom;

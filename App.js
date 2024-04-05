@@ -1,5 +1,6 @@
 import { StatusBar } from "expo-status-bar";
 import { StyleSheet, Text, View } from "react-native";
+import { useFonts } from "expo-font";
 // Navigation
 import { NavigationContainer } from "@react-navigation/native";
 import {
@@ -10,12 +11,26 @@ import {
 import UserInfoScreen from "./screens/UserInfoScreen";
 import ChooseAvatarScreen from "./screens/ChooseAvatarScreen";
 import Rooms from "./screens/Rooms";
-import Room from "./screens/Room";
+import WhoamiRoom from "./screens/whoami/WhoamiRoom";
+import ImposterRoom from "./screens/imposter/ImposterRoom";
 
 const Stack = createStackNavigator();
 
 export default function App() {
   const AppStack = () => {
+    const [fontsLoaded] = useFonts({
+      Horror: require("./assets/fonts/Danger.otf"),
+      Good: require("./assets/fonts/AmericanCaptain.ttf"),
+    });
+    if (!fontsLoaded) {
+      return (
+        <View
+          style={{ justifyContent: "center", flex: 1, alignItems: "center" }}
+        >
+          <Text>Failed to load fonts</Text>
+        </View>
+      );
+    }
     return (
       <NavigationContainer>
         <StatusBar style="dark" />
@@ -23,7 +38,7 @@ export default function App() {
           <Stack.Screen
             name="UserInfoScreen"
             component={UserInfoScreen}
-            options={{ headerShown: false }}
+            options={{ headerShown: false, title: "Wer bin Ich?!" }}
           />
           <Stack.Screen
             options={{
@@ -42,7 +57,7 @@ export default function App() {
               gestureEnabled: true,
               ...TransitionPresets.SlideFromRightIOS,
               headerTransparent: false,
-              title: "Rooms",
+              title: "Games",
               headerBackTitle: "Back",
               headerTintColor: "#3a3a3a",
             }}
@@ -53,9 +68,19 @@ export default function App() {
             options={{
               headerShown: false,
               gestureEnabled: false,
+              title: "Wer bin Ich?",
             }}
-            name="Room"
-            component={Room}
+            name="Whoami"
+            component={WhoamiRoom}
+          />
+          <Stack.Screen
+            options={{
+              headerShown: false,
+              gestureEnabled: false,
+              title: "IMPOSTER",
+            }}
+            name="Imposter"
+            component={ImposterRoom}
           />
         </Stack.Navigator>
       </NavigationContainer>

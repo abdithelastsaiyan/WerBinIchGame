@@ -56,26 +56,61 @@ const Rooms = (data) => {
   }, []);
 
   // Functions
-  const joinRoom = async (roomID) => {
+  const joinRoom = async (roomID, type) => {
     const docRef = doc(database, "rooms", roomID, "player", user.userID);
-    await setDoc(docRef, { name: user.name, avatar: user.avatar }).then(
-      navigation.push("Room", { userID: user.userID, roomID: roomID })
-    );
+    await setDoc(docRef, { name: user.name, avatar: user.avatar }).then(() => {
+      switch (type) {
+        case "whoami":
+          navigation.push("Whoami", { userID: user.userID, roomID: roomID });
+          break;
+
+        case "impostor":
+          navigation.push("Imposter", {
+            userID: user.userID,
+            roomID: roomID,
+            avatar: user.avatar,
+            username: user.name,
+          });
+        default:
+          console.log("hä dieser raum macht keinen sinn!");
+          break;
+      }
+    });
   };
 
   const handleCreateButton = async () => {
     if (isCreating && roomName !== "") {
       const roomRef = doc(database, "rooms", roomName);
-      await setDoc(roomRef, {
-        createdBy: user.userID,
-        status: 0,
-        asking: "",
-        answering: "",
-        round: 1,
-        finished: 0,
-        rating: [],
-        hostName: user.name,
-      }).then(joinRoom(roomName));
+      switch (gameMode) {
+        case "impostor":
+          await setDoc(roomRef, {
+            createdBy: user.userID,
+            status: 0,
+            round: 1,
+            hostName: user.name,
+            type: gameMode,
+            winner: "",
+          }).then(joinRoom(roomName, gameMode));
+          setIsCreating(false);
+          break;
+
+        case "whoami":
+          await setDoc(roomRef, {
+            createdBy: user.userID,
+            status: 0,
+            asking: "",
+            answering: "",
+            round: 1,
+            finished: 0,
+            rating: [],
+            hostName: user.name,
+            type: gameMode,
+          }).then(joinRoom(roomName, gameMode));
+          setIsCreating(false);
+          break;
+        default:
+          break;
+      }
     } else {
       setIsCreating(true);
     }
@@ -127,14 +162,14 @@ const Rooms = (data) => {
                       <TouchableOpacity
                         onPress={() => {
                           if (room.data().status === 0) {
-                            joinRoom(room.id);
+                            joinRoom(room.id, room.data().type);
                           }
                         }}
                         activeOpacity={0.7}
                         style={{
                           width: "83%",
                           height: 80,
-                          backgroundColor: "#f7fcfc",
+                          backgroundColor: "#fff",
                           borderRadius: 25,
                           justifyContent: "center",
                           marginBottom: 10,
@@ -185,7 +220,7 @@ const Rooms = (data) => {
                         }}
                         style={{
                           width: "15%",
-                          backgroundColor: "#ec2b2b",
+                          backgroundColor: "#fe5f55",
                           height: 80,
                           borderRadius: 15,
                           alignItems: "center",
@@ -204,14 +239,14 @@ const Rooms = (data) => {
                       key={room.id}
                       onPress={() => {
                         if (room.data().status === 0) {
-                          joinRoom(room.id);
+                          joinRoom(room.id, room.data().type);
                         }
                       }}
                       activeOpacity={0.7}
                       style={{
                         width: "90%",
                         height: 80,
-                        backgroundColor: "#f7fcfc",
+                        backgroundColor: "#fff",
                         borderRadius: 25,
                         justifyContent: "center",
                         marginBottom: 10,
@@ -299,41 +334,53 @@ const Rooms = (data) => {
               flexDirection: "row",
             }}
           >
-            <View
+            <TouchableOpacity
+              onPress={() => setGameMode("impostor")}
+              disabled={gameMode === "impostor"}
+              activeOpacity={0.7}
               style={{
                 height: 80,
                 width: "48%",
-                backgroundColor: "#444",
+                backgroundColor:
+                  gameMode === "impostor" ? "#1a1a1a" : "#5a5a5a",
                 borderRadius: 25,
                 alignItems: "center",
                 justifyContent: "center",
               }}
             >
-              <Text style={{ fontSize: 24, fontWeight: "700", color: "#f00" }}>
-                IMPOSTER
-              </Text>
               <Text
                 style={{
-                  fontSize: 10,
-                  position: "absolute",
-                  bottom: 10,
-                  color: "#aaa",
+                  fontSize: 26,
+                  color: gameMode === "impostor" ? "#f00" : "#222",
+                  fontFamily: "Horror",
+                  height: 44,
+                  paddingHorizontal: 10,
                 }}
               >
-                Coming Soon!
+                IMPOSTER
               </Text>
-            </View>
+            </TouchableOpacity>
             <TouchableOpacity
+              onPress={() => setGameMode("whoami")}
+              disabled={gameMode === "whoami"}
+              activeOpacity={0.7}
               style={{
                 height: 80,
                 width: "48%",
-                backgroundColor: "#93dbfa",
+                backgroundColor: gameMode === "whoami" ? "#93dbfa" : "#5a5a5a",
                 borderRadius: 25,
                 alignItems: "center",
                 justifyContent: "center",
               }}
             >
-              <Text style={{ fontSize: 24, fontWeight: "700", color: "#fff" }}>
+              <Text
+                style={{
+                  fontSize: 28,
+                  fontFamily: "Good",
+                  color: gameMode === "whoami" ? "#fff" : "#222",
+                  height: 22,
+                }}
+              >
                 Wer bin ich?
               </Text>
             </TouchableOpacity>
