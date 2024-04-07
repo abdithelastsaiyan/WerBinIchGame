@@ -48,6 +48,7 @@ const UserInfoScreen = () => {
 
   useEffect(() => {
     signInWithEmailAndPassword(auth, "saiyajin@server.de", "saiyajin123!");
+    console.log("now signed in");
   }, []);
 
   return (

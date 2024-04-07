@@ -260,7 +260,7 @@ const ImposterRoom = (data) => {
         impostor: deleteField(),
         wordChooser: deleteField(),
         playerSequence: deleteField(),
-        round: 0,
+        round: 1,
       });
 
       await batch.commit();
